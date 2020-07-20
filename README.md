@@ -4,7 +4,6 @@ Test environment:
 
 -- 4 CPU arm64 board (rpi4, 4G)   
 -- 4 VCPU qemu-kvm (very minimalistic openbox based initramfs)   
--- in-house vcpu_is_preempted() implementation, that just works (no fancy stuff)   
 -- Host is idle during the test   
 -- 5.7 kernel (PREEMPT_VOLUNTARY)   
 
