@@ -1,15 +1,14 @@
 ## ARM64 vcpu_is_preempted()
 
-Test environment:
+Test environment:    
+-- 4 CPU arm64 board (rpi4, 4G)    
+-- 4 VCPU qemu-kvm (very minimalistic openbox based initramfs)    
+-- Host is idle during the test    
+-- 5.7 kernel (PREEMPT_VOLUNTARY)    
 
--- 4 CPU arm64 board (rpi4, 4G)   
--- 4 VCPU qemu-kvm (very minimalistic openbox based initramfs)   
--- Host is idle during the test   
--- 5.7 kernel (PREEMPT_VOLUNTARY)   
-
-Executed tests:
--- schbench -t 3 -m 3 -p 4096   
--- perf bench sched all   
+Executed tests:    
+-- schbench -t 3 -m 3 -p 4096    
+-- perf bench sched all    
 
 I deliberately did not run overloaded/overcommitted VM (except for perf bench test), nor did I want to run lock-torturing tests.
 
