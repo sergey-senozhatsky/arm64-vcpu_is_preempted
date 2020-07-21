@@ -1,0 +1,64 @@
+From 4fb30e127e2617584e2c7b0784cf58bffb068f64 Mon Sep 17 00:00:00 2001
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Date: Mon, 20 Jul 2020 16:45:24 +0900
+Subject: [RFC][PATCH 4/4] arm64: do not use dummy vcpu_is_preempted() anymore
+
+vcpu_is_preempted() now can represent the actual state of
+the VCPU, so the scheduler can make better decisions when
+it picks the idle CPU to enqueue a task on. I executed a
+whole bunch of scheduler tests [0]. One particular test
+that shows the importance of vcpu_is_preempted() is AIO
+stress-ng test:
+
+x Disabled vcpu_is_preempted()
+stress-ng: info:  [100] stressor       bogo ops real time  usr time  sys time   bogo ops/s   bogo ops/s
+stress-ng: info:  [100]                           (secs)    (secs)    (secs)   (real time) (usr+sys time)
+stress-ng: info:  [100] aio              222927     10.01      0.89     27.61     22262.04      7822.00
+stress-ng: info:  [139] aio              217043     10.01      1.00     26.80     21685.46      7807.30
+stress-ng: info:  [178] aio              217261     10.01      1.08     26.79     21709.36      7795.51
+
++ Enabled vcpu_is_preempted()
+stress-ng: info:  [100] aio              432750     10.00      1.14     19.03     43264.33     21455.13
+stress-ng: info:  [139] aio              426771     10.01      1.09     18.67     42629.13     21597.72
+stress-ng: info:  [179] aio              533039     10.00      1.42     20.39     53281.70     24440.12
+
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+---
+ arch/arm64/include/asm/spinlock.h | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm64/include/asm/spinlock.h b/arch/arm64/include/asm/spinlock.h
+index 9083d6992603..6a390eeabe82 100644
+--- a/arch/arm64/include/asm/spinlock.h
++++ b/arch/arm64/include/asm/spinlock.h
+@@ -11,17 +11,20 @@
+ /* See include/linux/spinlock.h */
+ #define smp_mb__after_spinlock()	smp_mb()
+ 
+-/*
+- * Changing this will break osq_lock() thanks to the call inside
+- * smp_cond_load_relaxed().
+- *
+- * See:
+- * https://lore.kernel.org/lkml/20200110100612.GC2827@hirez.programming.kicks-ass.net
+- */
+ #define vcpu_is_preempted vcpu_is_preempted
++
++#ifdef CONFIG_PARAVIRT
++extern bool paravirt_vcpu_is_preempted(int cpu);
++
++static inline bool vcpu_is_preempted(int cpu)
++{
++	return paravirt_vcpu_is_preempted(cpu);
++}
++#else
+ static inline bool vcpu_is_preempted(int cpu)
+ {
+ 	return false;
+ }
++#endif /* CONFIG_PARAVIRT */
+ 
+ #endif /* __ASM_SPINLOCK_H */
+-- 
+2.27.0
+
